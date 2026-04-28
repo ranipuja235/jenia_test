@@ -1,39 +1,44 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 
-// ✅ Async thunk
 export const loginUser = createAsyncThunk(
   "auth/login",
   async (data, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        data
-      );
-      localStorage.setItem("token", res.data.token);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "Login failed");
+      const response = await fetch("https://dummyjson.com/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      return rejectWithValue("Invalid username or password");
     }
   }
 );
 
-// ✅ Slice
+const initialState = {
+  user: null,
+  loading: false,
+  error: null,
+};
+
 const authSlice = createSlice({
   name: "auth",
-  initialState: {
-    user: null,
-    loading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
-    logout: (state) => {
-      state.user = null;
-      localStorage.removeItem("token");
+    setUser: (state, action) => {
+      state.user = action.payload;
     },
   },
 
-  // ✅ Handle async states
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.pending, (state) => {
@@ -51,8 +56,5 @@ const authSlice = createSlice({
   },
 });
 
-// ✅ export actions
-export const { logout } = authSlice.actions;
-
-// ✅ THIS FIXES YOUR ERROR
+export const { setUser } = authSlice.actions;
 export default authSlice.reducer;
